@@ -8,6 +8,8 @@ import net.minecraft.tags.ItemTags;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Tool;
 
+import net.minecraft.world.level.block.Blocks;
+
 import java.util.List;
 
 //? if fabric {
@@ -39,24 +41,39 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
             return null;
         }
 
-        Tool tool = stack.get(DataComponents.TOOL);
-        if (tool == null) return null;
+        float baseSpeed = 1.0f;
 
-        for (Tool.Rule rule : tool.rules()) {
-            if (rule.blocks().unwrapKey().isPresent() &&
-                rule.blocks().unwrapKey().get().location().getPath().contains("sword")) {
-                return null;
+        Tool tool = stack.get(DataComponents.TOOL);
+        if (tool != null) {
+            for (Tool.Rule rule : tool.rules()) {
+                if (rule.blocks().unwrapKey().isPresent() &&
+                    rule.blocks().unwrapKey().get().location().getPath().contains("sword")) {
+                    return null;
+                }
+            }
+
+            baseSpeed = tool.defaultMiningSpeed();
+
+            for (Tool.Rule rule : tool.rules()) {
+                if (rule.speed().isPresent()) {
+                    float ruleSpeed = rule.speed().get();
+                    if (ruleSpeed > baseSpeed) {
+                        baseSpeed = ruleSpeed;
+                    }
+                }
             }
         }
 
-        float baseSpeed = tool.defaultMiningSpeed();
-
-        for (Tool.Rule rule : tool.rules()) {
-            if (rule.speed().isPresent()) {
-                float ruleSpeed = rule.speed().get();
-                if (ruleSpeed > baseSpeed) {
-                    baseSpeed = ruleSpeed;
-                }
+        // Fallback for custom tool items overriding getDestroySpeed()
+        if (baseSpeed <= 1.0f) {
+            if (stack.is(ItemTags.PICKAXES)) {
+                baseSpeed = stack.getDestroySpeed(Blocks.STONE.defaultBlockState());
+            } else if (stack.is(ItemTags.AXES)) {
+                baseSpeed = stack.getDestroySpeed(Blocks.OAK_LOG.defaultBlockState());
+            } else if (stack.is(ItemTags.SHOVELS)) {
+                baseSpeed = stack.getDestroySpeed(Blocks.DIRT.defaultBlockState());
+            } else if (stack.is(ItemTags.HOES)) {
+                baseSpeed = stack.getDestroySpeed(Blocks.NETHER_WART_BLOCK.defaultBlockState());
             }
         }
 
@@ -87,16 +104,16 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
         int mainhandHeaderIdx = -1;
 
         String mainHandTrans = Component.translatable("item.modifiers.mainhand").getString();
+        String attackSpeedTrans = Component.translatable("attribute.name.attack_speed").getString();
 
         for (int i = 0; i < tooltip.size(); i++) {
             Component c = tooltip.get(i);
-            String dbg = c.toString().toLowerCase();
             String str = c.getString();
 
-            if (dbg.contains("attribute.name.attack_speed")) {
+            if (attackSpeedTrans != null && !attackSpeedTrans.isEmpty() && str.contains(attackSpeedTrans)) {
                 attackSpeedIdx = i;
             }
-            if (dbg.contains("item.modifiers.mainhand") || (mainHandTrans != null && !mainHandTrans.isEmpty() && str.contains(mainHandTrans))) {
+            if (mainHandTrans != null && !mainHandTrans.isEmpty() && str.contains(mainHandTrans)) {
                 mainhandHeaderIdx = i;
             }
         }
