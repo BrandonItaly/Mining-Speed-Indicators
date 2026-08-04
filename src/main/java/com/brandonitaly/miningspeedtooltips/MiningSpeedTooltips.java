@@ -86,13 +86,17 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
         int attackSpeedIdx = -1;
         int mainhandHeaderIdx = -1;
 
+        String mainHandTrans = Component.translatable("item.modifiers.mainhand").getString();
+
         for (int i = 0; i < tooltip.size(); i++) {
             Component c = tooltip.get(i);
             String dbg = c.toString().toLowerCase();
-            if (dbg.contains("attack_speed")) {
+            String str = c.getString();
+
+            if (dbg.contains("attribute.name.attack_speed")) {
                 attackSpeedIdx = i;
             }
-            if (dbg.contains("item.modifiers.mainhand")) {
+            if (dbg.contains("item.modifiers.mainhand") || (mainHandTrans != null && !mainHandTrans.isEmpty() && str.contains(mainHandTrans))) {
                 mainhandHeaderIdx = i;
             }
         }
@@ -101,10 +105,6 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
             tooltip.add(attackSpeedIdx + 1, speedText);
         } else if (mainhandHeaderIdx != -1) {
             tooltip.add(mainhandHeaderIdx + 1, speedText);
-        } else {
-            tooltip.add(net.minecraft.network.chat.CommonComponents.EMPTY);
-            tooltip.add(Component.translatable("item.modifiers.mainhand").withStyle(ChatFormatting.GRAY));
-            tooltip.add(speedText);
         }
     }
 }
