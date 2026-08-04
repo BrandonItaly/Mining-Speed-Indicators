@@ -1,0 +1,6 @@
+{
+  "miningspeedtooltips.gui.mod_options": "Mining Speed Indicators Options",
+  "miningspeedtooltips.option.enable_tooltip": "Enable Mining Speed Tooltip",
+  "miningspeedtooltips.option.enable_tooltip.tooltip": "Show mining speed on tool item tooltips.",
+  "miningspeedtooltips.tooltip.mining_speed": " %s Mining Speed"
+}

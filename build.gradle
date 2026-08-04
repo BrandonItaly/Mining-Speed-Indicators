@@ -1,0 +1,264 @@
+import java.text.SimpleDateFormat
+import groovy.json.JsonSlurper
+import groovy.json.JsonParserType
+import groovy.json.JsonOutput
+
+plugins {
+    id "me.modmuss50.mod-publish-plugin" version "0.7.4"
+    id 'maven-publish'
+}
+
+def loader = property("loom.platform")
+def isFabric = loader == "fabric"
+def isNeoForge = loader == "neoforge"
+def unobfuscated = !project.name.startsWith("1")
+def modPlatformName = isNeoForge ? "NeoForge" : loader.capitalize()
+
+System.out.println("Loader: ${loader} | Unobfuscated Minecraft: ${unobfuscated}")
+
+if (isFabric) {
+    apply plugin: unobfuscated ? 'net.fabricmc.fabric-loom' : 'net.fabricmc.fabric-loom-remap'
+} else if (isNeoForge) {
+    apply plugin: 'net.neoforged.moddev'
+}
+
+base.archivesName = project.archives_base_name
+version = "${stonecutter.current.version}-${mod_version}"
+group = rootProject.maven_group
+
+def isJava25 = stonecutter.eval(stonecutter.current.version, ">=26.0")
+def javaRelease = isJava25 ? 25 : 21
+def javaCompat = JavaVersion.toVersion(javaRelease)
+
+java {
+    withSourcesJar()
+    sourceCompatibility = javaCompat
+    targetCompatibility = javaCompat
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = javaRelease
+}
+
+def loadEnv() {
+    def envFile = rootProject.file('.env')
+    if (envFile.exists()) {
+        envFile.readLines().each { line ->
+            def (key, value) = line.split('=', 2)
+            if (key && value && !System.getenv(key)) {
+                System.setProperty(key.trim(), value.trim())
+            }
+        }
+    }
+}
+loadEnv()
+
+def getSecret(String key) {
+    return project.findProperty(key) ?: System.getenv(key) ?: System.getProperty(key) ?: ""
+}
+
+if (unobfuscated && isFabric) {
+    configurations {
+        implementation.extendsFrom(modImplementation)
+        api.extendsFrom(modApi)
+        compileOnly.extendsFrom(modCompileOnly)
+        runtimeOnly.extendsFrom(modRuntimeOnly)
+    }
+}
+
+if (isFabric) {
+    configurations.configureEach {
+        resolutionStrategy { force("net.fabricmc:fabric-loader:${fabric_loader_version}") }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url "https://maven.neoforged.net/releases/" }
+    maven { url "https://www.cursemaven.com" }
+    maven { url "https://maven.terraformersmc.com/" }
+    
+    exclusiveContent {
+        forRepository { maven { url = "https://api.modrinth.com/maven"; name = "Modrinth" } }
+        filter { includeGroup "maven.modrinth" }
+    }
+}
+
+dependencies {
+    if (isFabric) {
+        minecraft "com.mojang:minecraft:${stonecutter.current.version}"
+        if (!unobfuscated) mappings loom.officialMojangMappings()
+        
+        modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+        modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
+    }
+
+    def addOptionalModrinthDep = { propName, modId ->
+        def ver = project.findProperty(propName) ?: ""
+        if (ver && ver != "[VERSIONED]") {
+            def baseName = propName.replaceAll('_version$', '')
+            def compileMcVersion = project.findProperty("${baseName}_compile_mc") ?: stonecutter.current.version
+            def depString = "maven.modrinth:${modId}:${compileMcVersion}-${ver}-${loader}"
+            if (isNeoForge) compileOnly depString
+            else modCompileOnly depString
+        } else {
+            logger.lifecycle("Skipping ${modId} dependency for ${project.path} (${propName} not set)")
+        }
+    }
+
+    def modmenuVer = project.findProperty("modmenu_version") ?: ""
+    if (modmenuVer && modmenuVer != "[VERSIONED]") {
+            modImplementation("com.terraformersmc:modmenu:${modmenuVer}")
+        }
+    }
+
+def aw = "${mod_id}.accesswidener"
+
+if (isFabric) {
+    loom {
+        accessWidenerPath = stonecutter.process(getRootProject().file("src/main/resources/${aw}"), "build/dev.aw")
+    }
+    if (!unobfuscated) remapJar {}
+} else if (isNeoForge) {
+    neoForge {
+        version = neoforge_version
+        def at = file('src/main/resources/META-INF/accesstransformer.cfg')
+        if (at.exists()) accessTransformers.from(at.absolutePath)
+        
+        mods {
+            create(mod_id) { sourceSet project.sourceSets.main }
+        }
+        runs {
+            client {
+                client()
+                systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            }
+        }
+    }
+}
+
+processResources {
+    def mcVersion = stonecutter.current.version.split("-")[0]
+    def matcher = (mcVersion =~ /^\d+\.\d+/)
+    def minecraftLine = matcher ? matcher[0] : mcVersion
+    def parts = minecraftLine.split(/\./)
+    def mcVersionNext = minecraftLine
+    if (parts.size() == 2) {
+        def minecraftMajor = parts[0]
+        def minecraftMinor = parts[1].toInteger()
+        mcVersionNext = "${minecraftMajor}.${minecraftMinor + 1}"
+    }
+
+    def version_range = isFabric ? mc_version_range.split(",").join("\",\"") : mc_version_range
+    def descriptorByLoader = [
+            fabric  : "fabric.mod.json",
+            forge   : "META-INF/mods.toml",
+            neoforge: "META-INF/neoforge.mods.toml"
+    ]
+
+    def expandProps = [
+            "version": mod_version, "mod_id": mod_id, "mod_name": mod_name,
+            "mod_license": mod_license, "mod_description": mod_description,
+            "mod_authors": mod_authors, "mod_group": project.group,
+            "mod_credits": mod_credits, "mod_homepage": mod_homepage,
+            "mod_source": mod_source, "mod_issues": mod_issues,
+            "neoforge_version": neoforge_version, "forge_version": forge_version,
+            "fabric_api_version": fabric_api_version, "mc_version_range": version_range,
+            "mc_version": isFabric ? "${mcVersion}-" : mcVersion, "mc_version_next": mcVersionNext, "aw": aw
+    ]
+    
+    inputs.properties(expandProps)
+
+    if (descriptorByLoader.containsKey(loader)) {
+        descriptorByLoader.each { otherLoader, descriptorPath ->
+            if (loader != otherLoader) exclude descriptorPath
+        }
+        if (!isFabric) exclude "${mod_id}-fabric.mixins.json"
+
+        filesMatching(descriptorByLoader[loader]) { expand expandProps }
+    }
+
+    def parser = new JsonSlurper().setType(JsonParserType.LAX)
+    filesMatching("**/*.json5") {
+        String noComments = JsonOutput.prettyPrint(JsonOutput.toJson(parser.parse(it.file)))
+        File newFile = new File(outputs.files.asPath, it.path.substring(0, it.path.length() - 1))
+        if (!noComments.isBlank()) {
+            newFile.getParentFile().mkdirs()
+            newFile.write(noComments)
+        }
+        it.exclude()
+    }
+    
+    if (isNeoForge && stonecutter.eval(stonecutter.current.version, "<=1.20.4")) {
+        filesMatching("META-INF/neoforge.mods.toml") {
+            it.copyTo(new File(outputs.files.asPath, "META-INF/mods.toml"))
+            it.exclude()
+        }
+    }
+}
+
+tasks.register('renameJarForPublication', Zip) {
+    def targetJar = (isFabric || loader == "forge") ? (unobfuscated ? jar : remapJar) : jar
+    
+    dependsOn targetJar
+    from targetJar.archiveFile.map { zipTree(it) }
+    archiveExtension = "jar"
+    metadataCharset "UTF-8"
+    destinationDirectory = base.libsDirectory
+    archiveClassifier = loader
+}
+
+def buildJar = tasks.register("buildJar", Copy) {
+    into("${rootProject.layout.getBuildDirectory().get()}/libs/$mod_version")
+    dependsOn(tasks.named("renameJarForPublication"))
+    from(tasks.named("renameJarForPublication", Zip).flatMap { it.archiveFile })
+}
+
+assemble.dependsOn renameJarForPublication
+build.finalizedBy(buildJar)
+
+ext {
+    releaseChangelog = {
+        def changelogFile = rootProject.file("CHANGELOG.md")
+        return changelogFile.exists() ? changelogFile.text : "## $mod_name $version\n\nNo changelog available."
+    }
+}
+
+publishMods {
+    displayName = "$mod_name [$modPlatformName] $project.version"
+    type = STABLE
+    changelog = releaseChangelog()
+    file = renameJarForPublication.archiveFile
+    
+    modLoaders.add(loader)
+    if (isFabric) modLoaders.add "quilt"
+    else if (loader == "forge" && stonecutter.eval(stonecutter.current.version, "<=1.20.1")) modLoaders.add "neoforge"
+    
+    def versions = (mc_version_range && mc_version_range != "[VERSIONED]") ? mc_version_range.split(",") : [stonecutter.current.version]
+    def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]
+
+    curseforge {
+        projectId = curseforge_id
+        accessToken = getSecret("CURSEFORGE_API_KEY")
+        minecraftVersions.addAll(versions)
+        javaVersions.addAll(supportedJavaVersions)
+        clientRequired = true
+        serverRequired = false
+        if (isFabric) {
+            optional("modmenu")
+            requires("fabric-api")
+        }
+    }
+
+    modrinth {
+        projectId = modrinth_id
+        accessToken = getSecret("MODRINTH_TOKEN")
+        minecraftVersions.addAll(versions)
+        publishMods.version = "$project.version+$loader"
+        if (isFabric) {
+            optional("modmenu")
+            requires("fabric-api")
+        }
+    }
+}

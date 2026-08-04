@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "id": "${mod_id}",
+  "version": "${version}",
+  "name": "${mod_name}",
+  "description": "${mod_description}",
+  "authors": [
+    "${mod_authors}"
+  ],
+  "contributors": [
+    "${mod_credits}"
+  ],
+  "contact": {
+    "homepage": "${mod_homepage}",
+    "sources": "${mod_source}",
+    "issues": "${mod_issues}"
+  },
+  "license": "${mod_license}",
+  "icon": "assets/${mod_id}/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "com.brandonitaly.miningspeedtooltips.MiningSpeedTooltips"
+    ],
+    "client": [
+      "com.brandonitaly.miningspeedtooltips.client.MiningSpeedTooltipsClient"
+    ],
+    "modmenu": [
+      "com.brandonitaly.miningspeedtooltips.client.ModMenuIntegration"
+    ]
+  },
+  "accessWidener": "${aw}",
+  "mixins": [
+    "${mod_id}.mixins.json"
+  ],
+  "depends": {
+    "fabric-api": "*",
+    "fabricloader": ">=0.17",
+    "minecraft": ["~${mc_version_range}"]
+  }
+}
