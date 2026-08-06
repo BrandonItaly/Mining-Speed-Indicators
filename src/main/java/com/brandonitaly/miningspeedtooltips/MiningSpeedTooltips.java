@@ -5,6 +5,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.Tool;
 
@@ -104,7 +105,7 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
         int mainhandHeaderIdx = -1;
 
         String mainHandTrans = Component.translatable("item.modifiers.mainhand").getString();
-        String attackSpeedTrans = Component.translatable("attribute.name.attack_speed").getString();
+        String attackSpeedTrans = Component.translatable(Attributes.ATTACK_SPEED.value().getDescriptionId()).getString();
 
         for (int i = 0; i < tooltip.size(); i++) {
             Component c = tooltip.get(i);

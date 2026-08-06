@@ -150,7 +150,8 @@ processResources {
         mcVersionNext = "${minecraftMajor}.${minecraftMinor + 1}"
     }
 
-    def version_range = isFabric ? mc_version_range.split(",").join("\",\"") : mc_version_range
+    def parsedVersions = parseMinecraftVersions(mc_version_range, stonecutter.current.version)
+    def version_range = isFabric ? parsedVersions.join("\",\"") : mc_version_range
     def descriptorByLoader = [
             fabric  : "fabric.mod.json",
             forge   : "META-INF/mods.toml",
@@ -241,6 +242,39 @@ ext {
     }
 }
 
+def parseMinecraftVersions(String range, String fallbackVersion) {
+    if (!range || range == "[VERSIONED]") return [fallbackVersion]
+    def result = []
+    range.split(",").each { rawToken ->
+        def token = rawToken.trim()
+        if (token.contains("-")) {
+            def subParts = token.split("-")
+            if (subParts.size() == 2) {
+                def startStr = subParts[0].trim()
+                def endStr = subParts[1].trim()
+                def startComponents = startStr.split(/\./).collect { it.toInteger() }
+                def endComponents = endStr.split(/\./).collect { it.toInteger() }
+                
+                if (startComponents.size() >= 2 && endComponents.size() >= 2 &&
+                    startComponents[0] == endComponents[0] && startComponents[1] == endComponents[1]) {
+                    int startPatch = startComponents.size() > 2 ? startComponents[2] : 0
+                    int endPatch = endComponents.size() > 2 ? endComponents[2] : 0
+                    for (int p = startPatch; p <= endPatch; p++) {
+                        result << "${startComponents[0]}.${startComponents[1]}${p == 0 ? '' : '.' + p}"
+                    }
+                } else {
+                    result << token
+                }
+            } else {
+                result << token
+            }
+        } else {
+            result << token
+        }
+    }
+    return result.unique()
+}
+
 publishMods {
     displayName = "$mod_name [$modPlatformName] $project.version"
     type = STABLE
@@ -251,7 +285,7 @@ publishMods {
     if (isFabric) modLoaders.add "quilt"
     else if (loader == "forge" && stonecutter.eval(stonecutter.current.version, "<=1.20.1")) modLoaders.add "neoforge"
     
-    def versions = (mc_version_range && mc_version_range != "[VERSIONED]") ? mc_version_range.split(",") : [stonecutter.current.version]
+    def versions = parseMinecraftVersions(mc_version_range, stonecutter.current.version)
     def supportedJavaVersions = isJava25 ? [JavaVersion.VERSION_25] : [JavaVersion.VERSION_21]
 
     curseforge {
