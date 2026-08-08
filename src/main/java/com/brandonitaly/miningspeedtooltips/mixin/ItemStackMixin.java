@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.List;
 
-@Mixin(ItemStack.class)
+@Mixin(value = ItemStack.class, priority = 10000)
 public class ItemStackMixin {
 
     @Inject(method = "getTooltipLines", at = @At("RETURN"), cancellable = true)

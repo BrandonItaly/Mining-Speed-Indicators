@@ -24,9 +24,6 @@
     ],
     "client": [
       "com.brandonitaly.miningspeedtooltips.client.MiningSpeedTooltipsClient"
-    ],
-    "modmenu": [
-      "com.brandonitaly.miningspeedtooltips.client.ModMenuIntegration"
     ]
   },
   "accessWidener": "${aw}",

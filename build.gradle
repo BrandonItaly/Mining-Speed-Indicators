@@ -94,6 +94,14 @@ dependencies {
         modApi "net.fabricmc.fabric-api:fabric-api:${fabric_api_version}"
     }
 
+    if (stonecutter.eval(stonecutter.current.version, "<=1.21.1")) {
+        if (isFabric) {
+            modCompileOnly "maven.modrinth:inline:1.21.1-1.2.2-fabric"
+        } else if (isNeoForge) {
+            compileOnly "maven.modrinth:inline:1.21.1-1.2.2-neoforge"
+        }
+    }
+
     def addOptionalModrinthDep = { propName, modId ->
         def ver = project.findProperty(propName) ?: ""
         if (ver && ver != "[VERSIONED]") {
@@ -296,7 +304,7 @@ publishMods {
         clientRequired = true
         serverRequired = false
         if (isFabric) {
-            optional("modmenu")
+            optional("inline-tooltips")
             requires("fabric-api")
         }
     }
@@ -307,7 +315,7 @@ publishMods {
         minecraftVersions.addAll(versions)
         publishMods.version = "$project.version+$loader"
         if (isFabric) {
-            optional("modmenu")
+            optional("inline-tooltips")
             requires("fabric-api")
         }
     }
