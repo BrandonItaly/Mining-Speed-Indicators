@@ -32,7 +32,7 @@ import net.neoforged.bus.api.IEventBus;
 /*@Mod(MiningSpeedTooltips.MOD_ID)
 *///?}
 public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?}*/ {
-    public static final String MOD_ID = "miningspeedtooltips";
+    public static final String MOD_ID = "miningspeedindicators";
 
     private static final List<Map.Entry<TagKey<Item>, BlockState>> DESTROY_SPEED_PROBES = List.of(
         Map.entry(ItemTags.PICKAXES, Blocks.STONE.defaultBlockState()),
@@ -182,7 +182,7 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
     /** Shift held: full "Mining Speed" line, matching Inline Tooltips' expanded format. */
     private static void addExpandedTooltip(List<Component> tooltip, MutableComponent iconComponent, String speedStr) {
         MutableComponent speedLine = iconComponent.copy()
-            .append(Component.translatable("miningspeedtooltips.tooltip.mining_speed", speedStr).withStyle(ChatFormatting.DARK_GREEN));
+            .append(Component.translatable("miningspeedindicators.tooltip.mining_speed", speedStr).withStyle(ChatFormatting.DARK_GREEN));
 
         Anchors anchors = findAnchors(tooltip);
         insertAfterAnchor(tooltip, anchors, speedLine, () -> {
@@ -267,7 +267,7 @@ public class MiningSpeedTooltips /*? if fabric {*/ implements ModInitializer /*?
 
     /** No Inline Tooltips (or no icon available) — plain text line. */
     private static void addPlainTextTooltip(List<Component> tooltip, String speedStr) {
-        Component speedText = Component.translatable("miningspeedtooltips.tooltip.mining_speed", speedStr)
+        Component speedText = Component.translatable("miningspeedindicators.tooltip.mining_speed", speedStr)
             .withStyle(ChatFormatting.DARK_GREEN);
 
         Anchors anchors = findAnchors(tooltip);

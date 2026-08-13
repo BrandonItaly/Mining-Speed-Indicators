@@ -1,3 +1,3 @@
-- Added support for [Inline Tooltips](https://modrinth.com/mod/inline-tooltips).
+- Fixed a crash when using the mod on NeoForge.
 
 **Full Changelog**: https://github.com/BrandonItaly/Mining-Speed-Indicators/commits/master
