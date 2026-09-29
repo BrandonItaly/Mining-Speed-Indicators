@@ -1,11 +1,12 @@
 {
   "required": true,
-  "package": "com.brandonitaly.miningspeedtooltips.mixin",
+  "package": "io.github.brandonitaly.miningspeedtooltips.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "ItemStackMixin"
+  "client": [
+    "${tooltip_mixin}",
+    "InlineTooltipsMixin"
   ],
-  "client": [],
+  "mixins": [],
   "injectors": {
     "defaultRequire": 1
   }

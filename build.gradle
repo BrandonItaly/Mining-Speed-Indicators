@@ -174,10 +174,14 @@ processResources {
             "mod_source": mod_source, "mod_issues": mod_issues,
             "neoforge_version": neoforge_version, "forge_version": forge_version,
             "fabric_api_version": fabric_api_version, "mc_version_range": version_range,
-            "mc_version": isFabric ? "${mcVersion}-" : mcVersion, "mc_version_next": mcVersionNext, "aw": aw
+            "mc_version": isFabric ? "${mcVersion}-" : mcVersion, "mc_version_next": mcVersionNext, "aw": aw,
+            "tooltip_mixin": isNeoForge && stonecutter.eval(stonecutter.current.version, ">1.21.8")
+                ? "NeoForgeAttributeTooltipMixin" : "ItemStackMixin"
     ]
     
     inputs.properties(expandProps)
+
+    filesMatching("${mod_id}.mixins.json") { expand expandProps }
 
     if (descriptorByLoader.containsKey(loader)) {
         descriptorByLoader.each { otherLoader, descriptorPath ->

@@ -20,10 +20,10 @@
   "environment": "client",
   "entrypoints": {
     "main": [
-      "com.brandonitaly.miningspeedtooltips.MiningSpeedTooltips"
+      "io.github.brandonitaly.miningspeedtooltips.MiningSpeedTooltips"
     ],
     "client": [
-      "com.brandonitaly.miningspeedtooltips.client.MiningSpeedTooltipsClient"
+      "io.github.brandonitaly.miningspeedtooltips.client.MiningSpeedTooltipsClient"
     ]
   },
   "accessWidener": "${aw}",

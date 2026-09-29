@@ -1,4 +1,4 @@
-package com.brandonitaly.miningspeedtooltips.client;
+package io.github.brandonitaly.miningspeedtooltips.client;
 
 //? if fabric {
 import net.fabricmc.api.ClientModInitializer;
