@@ -1,0 +1,32 @@
+import io.github.brandonitaly.packaging.UniversalJar
+
+def allUniversal = tasks.register('universalJar') {
+    group = 'build'
+    description = 'Builds combined Fabric and NeoForge jars for all supported Minecraft versions.'
+}
+
+def publishUniversal = tasks.register('publishMods') {
+    group = 'publishing'
+    description = 'Publishes one combined Fabric and NeoForge jar per supported Minecraft version.'
+}
+
+rootProject.childProjects.values().findAll { it.name.endsWith('-fabric') }.each { fabric ->
+    def minecraftVersion = fabric.name - '-fabric'
+    def suffix = minecraftVersion.replace('.', '_')
+    def neoForge = project(":${minecraftVersion}-neoforge")
+    def fabricJarTask = minecraftVersion.startsWith('1.') ? 'remapJar' : 'jar'
+
+    def universal = tasks.register("universalJar${suffix}", UniversalJar) {
+        group = 'build'
+        description = "Builds one Minecraft ${minecraftVersion} jar for Fabric and NeoForge."
+        dependsOn "${fabric.path}:${fabricJarTask}", "${neoForge.path}:jar"
+        fabricJar.set(providers.provider { fabric.tasks.named(fabricJarTask).get().archiveFile.get() })
+        neoForgeJar.set(providers.provider { neoForge.tasks.named('jar').get().archiveFile.get() })
+        outputJar.set(layout.buildDirectory.file(providers.gradleProperty('mod_version').map {
+            "libs/${it}/MiningSpeedIndicators-${minecraftVersion}-${it}.jar"
+        }))
+    }
+    allUniversal.configure { dependsOn universal }
+    publishUniversal.configure { dependsOn "${fabric.path}:publishMods" }
+
+}

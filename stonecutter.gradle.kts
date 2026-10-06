@@ -4,6 +4,8 @@ plugins {
     id("net.neoforged.moddev") version "2.0.147" apply false
 }
 
+apply(from = "gradle/universal.gradle")
+
 stonecutter active "26.1-fabric" /* [SC] DO NOT EDIT */
 
 stonecutter parameters {
